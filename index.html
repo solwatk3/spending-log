@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- Mobile viewport - prevents zoom, fills the screen like a native app -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- PWA theme color - colors the browser chrome on Android -->
+  <meta name="theme-color" content="#111827">
+  <!-- iOS-specific PWA settings -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Spending Log">
+  <title>Spending Log</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ===================== MAIN APP ===================== -->
+  <div id="app">
+
+    <!-- Header: month name, total, and back/forward nav buttons -->
+    <header>
+      <button id="prev-month" class="nav-btn" aria-label="Previous month">&#8249;</button>
+      <div class="header-center">
+        <h1 id="month-label">Loading...</h1>
+        <p id="month-total">$0.00 total</p>
+      </div>
+      <button id="next-month" class="nav-btn" aria-label="Next month">&#8250;</button>
+    </header>
+
+    <!-- Category summary - totals per category for this month -->
+    <section id="summary" class="hidden">
+      <h2>By Category</h2>
+      <div id="category-list"></div>
+    </section>
+
+    <!-- Individual expense entries for this month -->
+    <section id="expenses" class="hidden">
+      <h2>Expenses</h2>
+      <div id="expense-list"></div>
+    </section>
+
+    <!-- Shown when there are no expenses logged for the current month -->
+    <div id="empty-state">
+      <p>No expenses this month.</p>
+      <p>Tap + to log one.</p>
+    </div>
+
+  </div>
+
+  <!-- ===================== FAB (Floating Add Button) ===================== -->
+  <!-- Big tap-friendly button fixed to the bottom right corner -->
+  <button id="add-btn" aria-label="Add expense">+</button>
+
+  <!-- ===================== OVERLAY ===================== -->
+  <!-- Dark backdrop behind the bottom sheet - tap it to close -->
+  <div id="overlay" class="hidden" aria-hidden="true"></div>
+
+  <!-- ===================== BOTTOM SHEET (Add Expense Form) ===================== -->
+  <!-- Slides up from the bottom when the + button is tapped -->
+  <div id="add-sheet" class="hidden" role="dialog" aria-modal="true" aria-label="Add expense">
+
+    <!-- Visual handle at the top of the sheet (common iOS/Android pattern) -->
+    <div class="sheet-handle"></div>
+
+    <h2>Add Expense</h2>
+
+    <!-- Amount field - numeric keyboard on mobile -->
+    <label for="amount-input">Amount</label>
+    <input
+      type="number"
+      id="amount-input"
+      placeholder="0.00"
+      step="0.01"
+      min="0"
+      inputmode="decimal"
+      autocomplete="off"
+    >
+
+    <!-- Category field - uses a datalist so existing categories appear as suggestions,
+         but the user can always type a brand new one -->
+    <label for="category-input">Category</label>
+    <input
+      type="text"
+      id="category-input"
+      list="category-options"
+      placeholder="e.g. Food, Gas, Rent"
+      autocomplete="off"
+      autocorrect="off"
+    >
+    <!-- Datalist is populated by app.js with the user's saved categories -->
+    <datalist id="category-options"></datalist>
+
+    <!-- Optional note - what was the expense for? -->
+    <label for="note-input">Note (optional)</label>
+    <input
+      type="text"
+      id="note-input"
+      placeholder="What was this for?"
+      autocomplete="off"
+    >
+
+    <!-- Save and cancel buttons -->
+    <button id="save-btn">Save Expense</button>
+    <button id="cancel-btn">Cancel</button>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

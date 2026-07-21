@@ -1,0 +1,421 @@
+/* =====================================================
+   Spending Log - style.css
+   Mobile-first design. Dark theme. Touch-friendly.
+   ===================================================== */
+
+/* Reset - remove default browser spacing and box model weirdness */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Color variables - change these to retheme the whole app */
+:root {
+  --bg:         #111827; /* main page background */
+  --surface:    #1f2937; /* cards and panels */
+  --surface2:   #374151; /* inputs and secondary surfaces */
+  --accent:     #3b82f6; /* primary blue - buttons, amounts, category labels */
+  --accent-dark:#2563eb; /* darker blue for pressed/hover states */
+  --text:       #f9fafb; /* primary text */
+  --muted:      #9ca3af; /* secondary text - labels, dates, hints */
+  --border:     #374151; /* borders and dividers */
+  --radius:     12px;    /* corner radius for cards */
+}
+
+/* Base - fills the viewport like a native app */
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  /* System font stack - uses the native font on each platform */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  /* Prevent text selection on tap (feels more native) */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Allow text selection in inputs */
+input { -webkit-user-select: auto; user-select: auto; }
+
+/* Utility class - hides an element completely */
+.hidden { display: none !important; }
+
+
+/* =====================================================
+   HEADER
+   Sticky at the top - shows month name, total, nav arrows
+   ===================================================== */
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  /* Stays at the top while you scroll the expense list */
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.header-center {
+  text-align: center;
+  flex: 1;
+}
+
+header h1 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Monthly total shown below the month name */
+#month-total {
+  font-size: 0.875rem;
+  color: var(--accent);
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+/* Left/right navigation arrows */
+.nav-btn {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 2rem;
+  line-height: 1;
+  /* Minimum 44px touch target (Apple HIG recommendation) */
+  padding: 0.25rem 0.875rem;
+  min-height: 44px;
+  cursor: pointer;
+  border-radius: 8px;
+  /* Remove the blue tap flash on mobile */
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nav-btn:active {
+  background: var(--surface2);
+}
+
+
+/* =====================================================
+   MAIN CONTENT
+   ===================================================== */
+
+/* Extra bottom padding so the FAB doesn't overlap the last expense */
+#app {
+  padding-bottom: 90px;
+}
+
+/* Section (By Category, Expenses) */
+section {
+  padding: 1.25rem 1rem 0;
+}
+
+/* Section heading - small all-caps label above each list */
+section h2 {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 0.625rem;
+}
+
+
+/* =====================================================
+   CATEGORY SUMMARY
+   One row per category showing category name and total
+   ===================================================== */
+
+#category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.category-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface);
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius);
+}
+
+.category-name {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.category-amount {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+
+/* =====================================================
+   EXPENSE LIST
+   Individual expense entries, newest first
+   ===================================================== */
+
+#expense-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.expense-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: var(--surface);
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius);
+}
+
+.expense-left {
+  flex: 1;
+  min-width: 0; /* prevents text overflow from breaking layout */
+}
+
+/* Category label shown above the note */
+.expense-category {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Optional note text */
+.expense-note {
+  font-size: 0.9375rem;
+  color: var(--text);
+  margin-top: 3px;
+  /* Truncate very long notes with ellipsis */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Date below the note */
+.expense-date {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* Amount shown on the right side of each row */
+.expense-amount {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  margin-left: 1rem;
+  padding-top: 2px;
+}
+
+
+/* =====================================================
+   EMPTY STATE
+   Shown when no expenses exist for the current month
+   ===================================================== */
+
+#empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--muted);
+}
+
+#empty-state p {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+
+/* =====================================================
+   FLOATING ADD BUTTON (FAB)
+   Big round + button fixed to the bottom right corner
+   ===================================================== */
+
+#add-btn {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-size: 2.25rem;
+  line-height: 1;
+  border: none;
+  cursor: pointer;
+  /* Blue glow shadow */
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.45);
+  z-index: 20;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease;
+}
+
+#add-btn:active {
+  background: var(--accent-dark);
+  transform: scale(0.93);
+}
+
+
+/* =====================================================
+   OVERLAY
+   Dark backdrop that appears behind the bottom sheet
+   ===================================================== */
+
+#overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 30;
+}
+
+
+/* =====================================================
+   BOTTOM SHEET (Add Expense Form)
+   Slides up from the bottom when + is tapped
+   ===================================================== */
+
+#add-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  /* Rounded top corners - standard mobile sheet pattern */
+  border-radius: 20px 20px 0 0;
+  padding: 0 1.5rem 2.5rem;
+  z-index: 40;
+  /* Caps sheet height so it doesn't push off screen on small phones */
+  max-height: 92vh;
+  overflow-y: auto;
+}
+
+/* Small pill at the top of the sheet - visual hint it can be scrolled */
+.sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: var(--surface2);
+  border-radius: 2px;
+  margin: 1rem auto 1.25rem;
+}
+
+#add-sheet h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+
+/* =====================================================
+   FORM ELEMENTS
+   Labels, text inputs, number input inside the sheet
+   ===================================================== */
+
+label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.4rem;
+  margin-top: 1.125rem;
+}
+
+/* Remove top margin from the very first label in the sheet */
+#add-sheet label:first-of-type {
+  margin-top: 0;
+}
+
+/* Shared input styles */
+input[type="number"],
+input[type="text"] {
+  width: 100%;
+  background: var(--surface2);
+  border: 1.5px solid transparent;
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 1rem;
+  padding: 0.8125rem 1rem;
+  outline: none;
+  /* Remove iOS default styling */
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Blue border when a field is focused */
+input[type="number"]:focus,
+input[type="text"]:focus {
+  border-color: var(--accent);
+}
+
+/* Placeholder text color */
+input::placeholder {
+  color: var(--muted);
+}
+
+/* Remove the up/down spinner arrows on the number input */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+
+/* =====================================================
+   SHEET BUTTONS
+   Save (primary) and Cancel (ghost)
+   ===================================================== */
+
+#save-btn {
+  width: 100%;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.9375rem;
+  margin-top: 1.75rem;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.1s;
+}
+
+#save-btn:active {
+  background: var(--accent-dark);
+}
+
+#cancel-btn {
+  width: 100%;
+  background: none;
+  color: var(--muted);
+  border: none;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  padding: 0.875rem;
+  margin-top: 0.25rem;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
