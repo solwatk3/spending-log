@@ -26,6 +26,8 @@
       <div class="header-center">
         <h1 id="month-label">Loading...</h1>
         <p id="month-total">$0.00 total</p>
+        <!-- Today's spending - only shown when viewing the current month -->
+        <p id="today-total" class="hidden"></p>
       </div>
       <button id="next-month" class="nav-btn" aria-label="Next month">&#8250;</button>
     </header>
@@ -40,6 +42,8 @@
     <section id="expenses" class="hidden">
       <h2>Expenses</h2>
       <div id="expense-list"></div>
+      <!-- Export button - downloads current month as a CSV file -->
+      <button id="export-btn">Export CSV</button>
     </section>
 
     <!-- Shown when there are no expenses logged for the current month -->
@@ -65,7 +69,8 @@
     <!-- Visual handle at the top of the sheet (common iOS/Android pattern) -->
     <div class="sheet-handle"></div>
 
-    <h2>Add Expense</h2>
+    <!-- Title changes to "Edit Expense" when editing an existing record -->
+    <h2 id="sheet-title">Add Expense</h2>
 
     <!-- Amount field - numeric keyboard on mobile -->
     <label for="amount-input">Amount</label>

@@ -259,8 +259,8 @@ section h2 {
   line-height: 1;
   border: none;
   cursor: pointer;
-  /* Blue glow shadow */
-  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.45);
+  /* Purple glow shadow */
+  box-shadow: 0 4px 20px rgba(167, 139, 250, 0.4);
   z-index: 20;
   -webkit-tap-highlight-color: transparent;
   display: flex;
@@ -418,4 +418,114 @@ input[type="number"] {
   margin-top: 0.25rem;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+
+
+/* =====================================================
+   TODAY'S TOTAL
+   Small line in the header showing today's spending
+   Only visible when viewing the current month
+   ===================================================== */
+
+#today-total {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+
+/* =====================================================
+   CATEGORY COLOR DOT
+   Small colored circle shown before each category name
+   ===================================================== */
+
+.category-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+  flex-shrink: 0;
+  /* Color is set inline by app.js */
+}
+
+/* Align category rows so the dot sits next to the name */
+.category-row {
+  align-items: center;
+}
+
+.category-name {
+  display: flex;
+  align-items: center;
+}
+
+/* Dot inside the expense item category label */
+.expense-category {
+  display: flex;
+  align-items: center;
+}
+
+
+/* =====================================================
+   EXPENSE ITEM - RIGHT SIDE
+   Stacks amount on top and delete button below
+   ===================================================== */
+
+.expense-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-left: 1rem;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Delete (trash) button on each expense row */
+.delete-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+  opacity: 0.6;
+}
+
+.delete-btn:active {
+  color: #f87171; /* red flash on press */
+  opacity: 1;
+}
+
+/* Make the left side of each expense row tappable for editing */
+.expense-left {
+  cursor: pointer;
+}
+
+
+/* =====================================================
+   EXPORT CSV BUTTON
+   Sits at the bottom of the expense list
+   ===================================================== */
+
+#export-btn {
+  display: block;
+  width: 100%;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.75rem;
+  margin-top: 1rem;
+  cursor: pointer;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#export-btn:active {
+  background: var(--surface2);
 }

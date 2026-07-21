@@ -1,23 +1,57 @@
 // =====================================================
 // Spending Log - app.js
 // All app logic: storage, categories, rendering, events
+// Features: add, edit, delete, today total, category colors, CSV export
 // =====================================================
+
+
+// =====================================================
+// CATEGORY COLOR PALETTE
+// A set of distinct colors assigned to categories.
+// The same category name always gets the same color
+// because we hash the name to pick the index.
+// =====================================================
+
+const CATEGORY_COLORS = [
+  '#a78bfa', // purple (matches accent)
+  '#34d399', // green
+  '#f87171', // red/coral
+  '#fbbf24', // amber
+  '#60a5fa', // blue
+  '#f472b6', // pink
+  '#fb923c', // orange
+  '#22d3ee', // cyan
+  '#a3e635', // lime
+  '#e879f9', // fuchsia
+];
+
+// Hash a category name to a consistent index in the color palette.
+// Same name always returns the same color, regardless of order added.
+function getCategoryColor(name) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return CATEGORY_COLORS[Math.abs(hash) % CATEGORY_COLORS.length];
+}
 
 
 // =====================================================
 // STATE
-// Tracks which month/year the user is currently viewing
+// Tracks which month/year we're viewing and whether
+// the sheet is in add mode or edit mode.
 // =====================================================
 
 const state = {
   year: new Date().getFullYear(),
-  month: new Date().getMonth() // 0-indexed: 0 = January, 11 = December
+  month: new Date().getMonth(), // 0-indexed: 0 = January
+  editingId: null               // null = adding new; number = editing that expense ID
 };
 
 
 // =====================================================
 // LOCALSTORAGE HELPERS
-// All data lives on the device - no server needed
+// All data lives on the device - no server needed.
 // Keys used:
 //   "sl_expenses"   -> array of expense objects
 //   "sl_categories" -> array of category name strings
@@ -40,6 +74,22 @@ function addExpense(expense) {
   saveExpenses(expenses);
 }
 
+// Update an existing expense by ID - replaces the matching record
+function updateExpense(updatedExpense) {
+  const expenses = getExpenses();
+  const index = expenses.findIndex(e => e.id === updatedExpense.id);
+  if (index !== -1) {
+    expenses[index] = updatedExpense;
+    saveExpenses(expenses);
+  }
+}
+
+// Remove an expense from storage by its ID
+function deleteExpense(id) {
+  const expenses = getExpenses().filter(e => e.id !== id);
+  saveExpenses(expenses);
+}
+
 // Load the saved category name list from storage
 function getCategories() {
   return JSON.parse(localStorage.getItem('sl_categories') || '[]');
@@ -50,22 +100,18 @@ function saveCategories(categories) {
   localStorage.setItem('sl_categories', JSON.stringify(categories));
 }
 
-// Add a category name to the list if it doesn't already exist
-// Keeps the list alphabetical and case-insensitive de-duplicated
+// Add a category name to the list if it doesn't already exist.
+// Keeps the list alphabetical and case-insensitive de-duplicated.
 function addCategory(name) {
   const trimmed = name.trim();
   if (!trimmed) return;
-
   const categories = getCategories();
-
-  // Check if this category already exists (case-insensitive)
   const alreadyExists = categories.some(
     c => c.toLowerCase() === trimmed.toLowerCase()
   );
-
   if (!alreadyExists) {
     categories.push(trimmed);
-    categories.sort((a, b) => a.localeCompare(b)); // alphabetical
+    categories.sort((a, b) => a.localeCompare(b));
     saveCategories(categories);
   }
 }
@@ -80,13 +126,19 @@ function addCategory(name) {
 function getMonthExpenses(year, month) {
   const all = getExpenses();
   return all.filter(e => {
-    // Parse as local date by appending time - avoids UTC offset issues
+    // Append time so it parses as local date, not UTC
     const d = new Date(e.date + 'T00:00:00');
     return d.getFullYear() === year && d.getMonth() === month;
   });
 }
 
-// Sum expenses by category name
+// Get only today's expenses
+function getTodayExpenses() {
+  const today = new Date().toISOString().split('T')[0]; // "YYYY-MM-DD"
+  return getExpenses().filter(e => e.date === today);
+}
+
+// Sum expenses by category name.
 // Returns an object like: { "Food": 45.20, "Gas": 30.00 }
 function getCategoryTotals(expenses) {
   const totals = {};
@@ -102,7 +154,7 @@ function formatMoney(amount) {
   return '$' + amount.toFixed(2);
 }
 
-// Format a "YYYY-MM-DD" date string as a short readable date (e.g. "Jul 20")
+// Format a "YYYY-MM-DD" string as a short readable date (e.g. "Jul 20")
 function formatDate(dateStr) {
   const d = new Date(dateStr + 'T00:00:00');
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -112,6 +164,12 @@ function formatDate(dateStr) {
 function getMonthLabel(year, month) {
   const d = new Date(year, month, 1);
   return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+
+// Check if the state is currently showing the current real month
+function isCurrentMonth() {
+  const now = new Date();
+  return state.year === now.getFullYear() && state.month === now.getMonth();
 }
 
 
@@ -124,22 +182,35 @@ function getMonthLabel(year, month) {
 function render() {
   const expenses = getMonthExpenses(state.year, state.month);
 
-  // Update month label and total in the header
+  // Update month label and monthly total in the header
   document.getElementById('month-label').textContent = getMonthLabel(state.year, state.month);
   const total = expenses.reduce((sum, e) => sum + e.amount, 0);
   document.getElementById('month-total').textContent = formatMoney(total) + ' total';
 
-  const emptyState = document.getElementById('empty-state');
-  const summarySection = document.getElementById('summary');
+  // Show today's total only when viewing the current month
+  const todayEl = document.getElementById('today-total');
+  if (isCurrentMonth()) {
+    const todayExpenses = getTodayExpenses();
+    if (todayExpenses.length > 0) {
+      const todayTotal = todayExpenses.reduce((sum, e) => sum + e.amount, 0);
+      todayEl.textContent = 'Today: ' + formatMoney(todayTotal);
+      todayEl.classList.remove('hidden');
+    } else {
+      todayEl.classList.add('hidden');
+    }
+  } else {
+    todayEl.classList.add('hidden');
+  }
+
+  const emptyState      = document.getElementById('empty-state');
+  const summarySection  = document.getElementById('summary');
   const expensesSection = document.getElementById('expenses');
 
   if (expenses.length === 0) {
-    // No expenses this month - show the empty state message
     emptyState.classList.remove('hidden');
     summarySection.classList.add('hidden');
     expensesSection.classList.add('hidden');
   } else {
-    // Expenses exist - hide the empty state, show the lists
     emptyState.classList.add('hidden');
     summarySection.classList.remove('hidden');
     expensesSection.classList.remove('hidden');
@@ -148,65 +219,123 @@ function render() {
   }
 }
 
-// Render the "By Category" summary section
-// Shows each category with its total, sorted highest-to-lowest
+// Render the "By Category" summary section with color dots
 function renderSummary(expenses) {
   const totals = getCategoryTotals(expenses);
   const container = document.getElementById('category-list');
-  container.innerHTML = ''; // clear existing rows
+  container.innerHTML = '';
 
-  // Sort by total amount, highest first
+  // Sort highest total first
   const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
 
-  sorted.forEach(([category, amount]) => {
+  sorted.forEach(function(entry) {
+    const category = entry[0];
+    const amount   = entry[1];
+    const color    = getCategoryColor(category);
+
     const row = document.createElement('div');
     row.className = 'category-row';
-    // Build the row HTML directly - safe here since category names come from user input
-    // that we stored ourselves (not from external sources)
-    row.innerHTML =
-      '<span class="category-name">' + category + '</span>' +
-      '<span class="category-amount">' + formatMoney(amount) + '</span>';
+
+    // Left side: colored dot + category name
+    const nameEl = document.createElement('span');
+    nameEl.className = 'category-name';
+    nameEl.innerHTML =
+      '<span class="category-dot" style="background:' + color + '"></span>' +
+      category;
+
+    // Right side: total amount
+    const amountEl = document.createElement('span');
+    amountEl.className = 'category-amount';
+    amountEl.textContent = formatMoney(amount);
+
+    row.appendChild(nameEl);
+    row.appendChild(amountEl);
     container.appendChild(row);
   });
 }
 
 // Render the individual expense list (newest first)
+// Each row has: color dot, category, note, date (tappable to edit) + amount + delete button
 function renderExpenseList(expenses) {
   const container = document.getElementById('expense-list');
-  container.innerHTML = ''; // clear existing items
+  container.innerHTML = '';
 
-  // Sort by ID descending - since IDs are timestamps, highest ID = most recent
+  // Sort by ID descending - highest ID = most recently added
   const sorted = [...expenses].sort((a, b) => b.id - a.id);
 
-  sorted.forEach(expense => {
+  sorted.forEach(function(expense) {
+    const color = getCategoryColor(expense.category);
+
     const item = document.createElement('div');
     item.className = 'expense-item';
 
-    // Build note line only if a note was entered
-    const noteHTML = expense.note
-      ? '<div class="expense-note">' + expense.note + '</div>'
-      : '';
+    // --- LEFT SIDE: category, note, date (tap to open edit sheet) ---
+    const left = document.createElement('div');
+    left.className = 'expense-left';
 
-    item.innerHTML =
-      '<div class="expense-left">' +
-        '<div class="expense-category">' + expense.category + '</div>' +
-        noteHTML +
-        '<div class="expense-date">' + formatDate(expense.date) + '</div>' +
-      '</div>' +
-      '<div class="expense-amount">' + formatMoney(expense.amount) + '</div>';
+    const catEl = document.createElement('div');
+    catEl.className = 'expense-category';
+    catEl.innerHTML =
+      '<span class="category-dot" style="background:' + color + '"></span>' +
+      expense.category;
 
+    left.appendChild(catEl);
+
+    if (expense.note) {
+      const noteEl = document.createElement('div');
+      noteEl.className = 'expense-note';
+      noteEl.textContent = expense.note;
+      left.appendChild(noteEl);
+    }
+
+    const dateEl = document.createElement('div');
+    dateEl.className = 'expense-date';
+    dateEl.textContent = formatDate(expense.date);
+    left.appendChild(dateEl);
+
+    // Tapping the left side opens the edit sheet for this expense
+    left.addEventListener('click', function() {
+      openSheetForEdit(expense);
+    });
+
+    // --- RIGHT SIDE: amount (top) + delete button (bottom) ---
+    const right = document.createElement('div');
+    right.className = 'expense-right';
+
+    const amountEl = document.createElement('div');
+    amountEl.className = 'expense-amount';
+    amountEl.textContent = formatMoney(expense.amount);
+
+    // Trash icon delete button
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'delete-btn';
+    deleteBtn.setAttribute('aria-label', 'Delete expense');
+    deleteBtn.textContent = '🗑';
+
+    // Confirm before deleting so accidental taps don't lose data
+    deleteBtn.addEventListener('click', function(e) {
+      e.stopPropagation(); // prevent the edit sheet from opening
+      if (confirm('Delete this expense?')) {
+        deleteExpense(expense.id);
+        render();
+      }
+    });
+
+    right.appendChild(amountEl);
+    right.appendChild(deleteBtn);
+
+    item.appendChild(left);
+    item.appendChild(right);
     container.appendChild(item);
   });
 }
 
-// Populate the category datalist with all saved category names
-// Called every time the add sheet opens so it always shows the latest list
+// Populate the category datalist with all saved category names.
+// Called every time the add/edit sheet opens.
 function renderCategoryOptions() {
   const datalist = document.getElementById('category-options');
-  datalist.innerHTML = ''; // clear old options
-
-  const categories = getCategories();
-  categories.forEach(cat => {
+  datalist.innerHTML = '';
+  getCategories().forEach(function(cat) {
     const option = document.createElement('option');
     option.value = cat;
     datalist.appendChild(option);
@@ -216,37 +345,58 @@ function renderCategoryOptions() {
 
 // =====================================================
 // BOTTOM SHEET
-// Open and close the add-expense form
+// Open for adding a new expense, or editing an existing one
 // =====================================================
 
+// Open the sheet in ADD mode (blank form)
 function openSheet() {
-  // Show the sheet and overlay
+  state.editingId = null; // make sure we're not in edit mode
+
+  document.getElementById('sheet-title').textContent = 'Add Expense';
+  document.getElementById('save-btn').textContent    = 'Save Expense';
+  document.getElementById('amount-input').value      = '';
+  document.getElementById('category-input').value    = '';
+  document.getElementById('note-input').value        = '';
+
+  renderCategoryOptions();
+  showSheet();
+}
+
+// Open the sheet in EDIT mode, pre-filled with an existing expense's data
+function openSheetForEdit(expense) {
+  state.editingId = expense.id; // store which record we're updating
+
+  document.getElementById('sheet-title').textContent  = 'Edit Expense';
+  document.getElementById('save-btn').textContent     = 'Save Changes';
+  document.getElementById('amount-input').value       = expense.amount;
+  document.getElementById('category-input').value     = expense.category;
+  document.getElementById('note-input').value         = expense.note || '';
+
+  renderCategoryOptions();
+  showSheet();
+}
+
+// Shared logic to show the overlay and sheet
+function showSheet() {
   document.getElementById('add-sheet').classList.remove('hidden');
   document.getElementById('overlay').classList.remove('hidden');
-
-  // Clear all fields so the form starts fresh each time
-  document.getElementById('amount-input').value = '';
-  document.getElementById('category-input').value = '';
-  document.getElementById('note-input').value = '';
-
-  // Refresh the category dropdown with whatever categories are saved
-  renderCategoryOptions();
-
-  // Focus the amount field after a short delay so the keyboard opens smoothly
-  setTimeout(() => {
+  // Focus amount field after a short delay so the keyboard opens smoothly
+  setTimeout(function() {
     document.getElementById('amount-input').focus();
   }, 150);
 }
 
+// Hide the sheet and overlay
 function closeSheet() {
   document.getElementById('add-sheet').classList.add('hidden');
   document.getElementById('overlay').classList.add('hidden');
+  state.editingId = null;
 }
 
 
 // =====================================================
 // SAVE EXPENSE
-// Validates input, builds the expense object, stores it
+// Handles both adding a new expense and updating an existing one
 // =====================================================
 
 function handleSave() {
@@ -254,7 +404,7 @@ function handleSave() {
   const category  = document.getElementById('category-input').value.trim();
   const note      = document.getElementById('note-input').value.trim();
 
-  // Amount is required and must be a positive number
+  // Validate - amount must be a positive number
   const amount = parseFloat(amountRaw);
   if (!amountRaw || isNaN(amount) || amount <= 0) {
     alert('Please enter a valid amount greater than $0.00');
@@ -262,35 +412,94 @@ function handleSave() {
     return;
   }
 
-  // Category is required
+  // Validate - category is required
   if (!category) {
     alert('Please enter a category.');
     document.getElementById('category-input').focus();
     return;
   }
 
-  // Build the expense object
-  const expense = {
-    id: Date.now(),                                  // unique ID based on timestamp
-    amount: parseFloat(amount.toFixed(2)),           // round to 2 decimal places
-    category: category,
-    note: note,
-    date: new Date().toISOString().split('T')[0]     // today as "YYYY-MM-DD"
-  };
+  const roundedAmount = parseFloat(amount.toFixed(2));
 
-  // Persist the expense and its category
-  addExpense(expense);
-  addCategory(category);
+  if (state.editingId !== null) {
+    // --- EDIT MODE: update the existing record ---
+    // Keep the original date - we're only updating the fields the user can change
+    const existing = getExpenses().find(e => e.id === state.editingId);
+    if (existing) {
+      updateExpense({
+        id:       existing.id,
+        amount:   roundedAmount,
+        category: category,
+        note:     note,
+        date:     existing.date // preserve original date
+      });
+      addCategory(category); // save category if it's new
+    }
+  } else {
+    // --- ADD MODE: create a new expense record ---
+    addExpense({
+      id:       Date.now(),                              // unique ID = timestamp
+      amount:   roundedAmount,
+      category: category,
+      note:     note,
+      date:     new Date().toISOString().split('T')[0]  // today as "YYYY-MM-DD"
+    });
+    addCategory(category);
 
-  // Close the sheet
+    // Jump to current month so the new expense is visible
+    state.year  = new Date().getFullYear();
+    state.month = new Date().getMonth();
+  }
+
   closeSheet();
-
-  // Jump back to the current month so the new expense is visible
-  state.year  = new Date().getFullYear();
-  state.month = new Date().getMonth();
-
-  // Re-render everything with the new data
   render();
+}
+
+
+// =====================================================
+// EXPORT CSV
+// Downloads the current month's expenses as a .csv file
+// =====================================================
+
+function exportCSV() {
+  const expenses = getMonthExpenses(state.year, state.month);
+
+  if (expenses.length === 0) {
+    alert('No expenses this month to export.');
+    return;
+  }
+
+  // CSV header row
+  const rows = [['Date', 'Category', 'Amount', 'Note']];
+
+  // Sort by date ascending for the export
+  const sorted = [...expenses].sort((a, b) => a.date.localeCompare(b.date));
+
+  sorted.forEach(function(e) {
+    // Wrap fields in quotes to handle commas inside notes/categories
+    rows.push([
+      e.date,
+      '"' + e.category.replace(/"/g, '""') + '"',
+      e.amount.toFixed(2),
+      '"' + (e.note || '').replace(/"/g, '""') + '"'
+    ]);
+  });
+
+  const csvContent = rows.map(function(r) { return r.join(','); }).join('\n');
+
+  // Create a downloadable file and trigger it
+  const blob = new Blob([csvContent], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+
+  // File name includes the month, e.g. "spending-log-2026-07.csv"
+  const monthStr = String(state.month + 1).padStart(2, '0');
+  link.href     = url;
+  link.download = 'spending-log-' + state.year + '-' + monthStr + '.csv';
+  link.click();
+
+  // Clean up the temporary URL
+  URL.revokeObjectURL(url);
 }
 
 
@@ -308,10 +517,10 @@ document.getElementById('overlay').addEventListener('click', closeSheet);
 // Close the sheet when Cancel is tapped
 document.getElementById('cancel-btn').addEventListener('click', closeSheet);
 
-// Save the expense when Save is tapped
+// Save (or update) the expense when Save is tapped
 document.getElementById('save-btn').addEventListener('click', handleSave);
 
-// Also save if the user presses Enter in the note field (common on desktop)
+// Allow pressing Enter in the note field to save
 document.getElementById('note-input').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') handleSave();
 });
@@ -319,7 +528,6 @@ document.getElementById('note-input').addEventListener('keydown', function(e) {
 // Navigate to the previous month
 document.getElementById('prev-month').addEventListener('click', function() {
   if (state.month === 0) {
-    // Wrap from January back to December of the previous year
     state.month = 11;
     state.year -= 1;
   } else {
@@ -331,7 +539,6 @@ document.getElementById('prev-month').addEventListener('click', function() {
 // Navigate to the next month
 document.getElementById('next-month').addEventListener('click', function() {
   if (state.month === 11) {
-    // Wrap from December forward to January of the next year
     state.month = 0;
     state.year += 1;
   } else {
@@ -339,6 +546,9 @@ document.getElementById('next-month').addEventListener('click', function() {
   }
   render();
 });
+
+// Export current month to CSV
+document.getElementById('export-btn').addEventListener('click', exportCSV);
 
 
 // =====================================================
@@ -349,7 +559,6 @@ document.getElementById('next-month').addEventListener('click', function() {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
     navigator.serviceWorker.register('sw.js').catch(function(err) {
-      // Service worker registration failed - app still works, just no offline support
       console.log('Service worker registration failed:', err);
     });
   });
@@ -357,8 +566,7 @@ if ('serviceWorker' in navigator) {
 
 
 // =====================================================
-// INIT
-// Run the initial render when the page first loads
+// INIT - run the first render when the page loads
 // =====================================================
 
 render();
