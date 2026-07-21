@@ -12,14 +12,14 @@
 
 /* Color variables - change these to retheme the whole app */
 :root {
-  --bg:         #111827; /* main page background */
-  --surface:    #1f2937; /* cards and panels */
-  --surface2:   #374151; /* inputs and secondary surfaces */
-  --accent:     #3b82f6; /* primary blue - buttons, amounts, category labels */
-  --accent-dark:#2563eb; /* darker blue for pressed/hover states */
-  --text:       #f9fafb; /* primary text */
-  --muted:      #9ca3af; /* secondary text - labels, dates, hints */
-  --border:     #374151; /* borders and dividers */
+  --bg:         #000000; /* main page background */
+  --surface:    #0f0f0f; /* cards and panels */
+  --surface2:   #1a1a1a; /* inputs and secondary surfaces */
+  --accent:     #a78bfa; /* light purple - buttons, amounts, category labels */
+  --accent-dark:#8b5cf6; /* darker purple for pressed/hover states */
+  --text:       #f5f5f5; /* primary text */
+  --muted:      #888888; /* secondary text - labels, dates, hints */
+  --border:     #222222; /* borders and dividers */
   --radius:     12px;    /* corner radius for cards */
 }
 
